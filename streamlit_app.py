@@ -1,38 +1,55 @@
-from collections import namedtuple
-import altair as alt
-import math
-import pandas as pd
 import streamlit as st
+import validators
+import requests
+from bs4 import BeautifulSoup
+from gensim.summarization import summarize
 
-"""
-# Welcome to Streamlit!
+# Streamlit app title and description
+st.title("Web Content Summarizer")
+st.write("Enter a URL to generate a summary of its content.")
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
+# User input for the URL
+url = st.text_input("Enter a URL:", "")
 
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+# Function to validate a URL
+def is_valid_url(url):
+    if validators.url(url):
+        return True
+    else:
+        return False
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+# Function to extract and summarize web content
+def summarize_web_content(url):
+    try:
+        # Send a GET request to the URL
+        response = requests.get(url)
+        response.raise_for_status()
 
+        # Parse the HTML content of the page
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-with st.echo(code_location='below'):
-    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
+        # Extract the text content from the page
+        page_content = soup.get_text()
 
-    Point = namedtuple('Point', 'x y')
-    data = []
+        # Generate a summary of the content
+        summary = summarize(page_content)
 
-    points_per_turn = total_points / num_turns
+        # Display the summary
+        st.subheader("Generated Summary:")
+        st.write(summary)
 
-    for curr_point_num in range(total_points):
-        curr_turn, i = divmod(curr_point_num, points_per_turn)
-        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-        radius = curr_point_num / total_points
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
-        data.append(Point(x, y))
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
 
-    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-        .mark_circle(color='#0068c9', opacity=0.5)
-        .encode(x='x:Q', y='y:Q'))
+# Button to trigger content summarization and URL validation
+if st.button("Summarize Content"):
+    if url:
+        if is_valid_url(url):
+            summarize_web_content(url)
+        else:
+            st.error("Invalid URL. Please enter a valid URL.")
+    else:
+        st.warning("Please enter a URL.")
+
+# Display a footer
+st.write("Jeetendra")
